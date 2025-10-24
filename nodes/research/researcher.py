@@ -64,7 +64,7 @@ def execute_parallel_research(query: str, sources: list, state: EnhancedBlogStat
         future_to_source = {}
 
         for source in sources:
-            if source == "web" and os.environ.get("TAVILY_API_KEY"):
+            if source == "web":
                 future = executor.submit(execute_web_search, query, state)
                 future_to_source[future] = "web"
             elif source == "arxiv":
@@ -100,7 +100,11 @@ def should_stop_research(state: EnhancedBlogState) -> bool:
 
 # Web search function (you'll need to implement this based on your preferred API)
 def execute_web_search(query: str, state: EnhancedBlogState) -> list:
-    """Execute web search using configured API"""
-    # Implementation depends on whether you're using Tavily, Perplexity, etc.
-    # This is a placeholder - implement based on your chosen web search provider
-    return []
+    """Execute web search via Perplexity (minimal proxy)."""
+    if not os.environ.get("PERPLEXITY_API_KEY"):
+        return []
+    try:
+        return execute_perplexity_search(query, state)
+    except Exception as e:
+        print(f"Web search (Perplexity) failed: {e}")
+        return []
