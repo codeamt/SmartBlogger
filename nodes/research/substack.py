@@ -1,7 +1,8 @@
+import os
 import requests
 
 
-def execute_substack_search(query: str) -> list:
+def execute_substack_search(query: str, state=None) -> list:
     """Enhanced Substack search with API if available"""
     try:
         # Try Substack API first

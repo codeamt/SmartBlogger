@@ -2,7 +2,7 @@ import requests
 import os
 
 
-def execute_perplexity_search(query: str) -> list:
+def execute_perplexity_search(query: str, state=None) -> list:
     """Use Perplexity API for high-quality web search"""
     api_key = os.environ.get("PERPLEXITY_API_KEY")
     if not api_key:

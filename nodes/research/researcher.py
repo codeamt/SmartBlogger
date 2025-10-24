@@ -1,11 +1,11 @@
-from ..state import EnhancedBlogState
+from ...state import EnhancedBlogState
 import os
 import concurrent.futures
 from .arxiv import execute_arxiv_search
 from .github import execute_github_search
 from .substack import execute_substack_search
 from .perplexity import execute_perplexity_search
-from ..utils.research_organizer import organize_research_results
+from ...utils.research_organizer import organize_research_results
 
 
 def research_node(state: EnhancedBlogState) -> EnhancedBlogState:
