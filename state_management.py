@@ -1,6 +1,8 @@
 import streamlit as st
 from state import EnhancedBlogState
 from config import FREE_TIER_CREDITS
+import os
+import shutil
 
 
 def initialize_session_state():
@@ -40,5 +42,13 @@ def get_initial_state(user_inputs: dict) -> EnhancedBlogState:
 
 def clear_session_state():
     """Clear all session state"""
+    # Clean up session-scoped upload directory if present
+    upload_dir = st.session_state.get("upload_dir")
+    if upload_dir and os.path.isdir(upload_dir):
+        try:
+            shutil.rmtree(upload_dir)
+        except Exception:
+            pass
+
     st.session_state.clear()
     initialize_session_state()

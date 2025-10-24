@@ -1,16 +1,13 @@
 import os
 import requests
+from .perplexity import execute_perplexity_search
 
 
 def execute_substack_search(query: str, state=None) -> list:
-    """Enhanced Substack search with API if available"""
+    """Proxy Substack search via Perplexity using a site filter."""
     try:
-        # Try Substack API first
-        api_key = os.environ.get("SUBSTACK_API_KEY")
-        if api_key:
-            return substack_api_search(query, api_key)
-        else:
-            return substack_web_search(query)
+        site_query = f"site:substack.com {query}"
+        return execute_perplexity_search(site_query, state)
     except Exception as e:
         print(f"Substack search error: {e}")
         return []

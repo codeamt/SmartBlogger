@@ -3,43 +3,16 @@ import requests
 from bs4 import BeautifulSoup
 import time
 from ...state import EnhancedBlogState
+from .perplexity import execute_perplexity_search
 
 def execute_github_search(query: str, state: EnhancedBlogState) -> list:
-    """Enhanced GitHub repository search with better filtering"""
+    """Proxy GitHub search via Perplexity using a site filter."""
     try:
-        # Use GitHub search API for more reliable results
-        headers = {}
-        if os.environ.get("GITHUB_TOKEN"):
-            headers = {"Authorization": f"token {os.environ.get('GITHUB_TOKEN')}"}
-
-        search_url = f"https://api.github.com/search/repositories?q={query}&sort=stars&order=desc&per_page=5"
-
-        response = requests.get(search_url, headers=headers, timeout=15)
-        if response.status_code != 200:
-            # Fallback to web scraping
-            return github_web_search(query)
-
-        data = response.json()
-        results = []
-
-        for repo in data.get('items', [])[:3]:
-            # Filter out low-quality repositories
-            if should_include_repo(repo):
-                results.append({
-                    "title": repo['name'],
-                    "url": repo['html_url'],
-                    "content": repo.get('description', '')[:200],
-                    "stars": repo.get('stargazers_count', 0),
-                    "language": repo.get('language', ''),
-                    "updated": repo.get('updated_at', ''),
-                    "topics": repo.get('topics', [])[:5]
-                })
-
-        return results
-
+        site_query = f"site:github.com {query}"
+        return execute_perplexity_search(site_query, state)
     except Exception as e:
-        print(f"GitHub API search error: {e}")
-        return github_web_search(query)
+        print(f"GitHub search (Perplexity) error: {e}")
+        return []
 
 
 def github_web_search(query: str) -> list:

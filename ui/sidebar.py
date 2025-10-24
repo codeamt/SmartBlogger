@@ -26,9 +26,9 @@ def render_sidebar() -> dict:
 
         # Document upload
         uploaded_files = st.file_uploader(
-            "Upload PDFs/docs",
+            "Upload files",
             accept_multiple_files=True,
-            type=["pdf", "txt", "md"]
+            type=["pdf", "txt", "md", "png", "jpeg"]
         )
         user_inputs["uploaded_files"] = uploaded_files
         user_inputs["file_paths"] = process_uploaded_files(uploaded_files)
@@ -67,6 +67,13 @@ def render_sidebar() -> dict:
     return user_inputs
 
 
+def _get_upload_dir():
+    """Return a session-scoped upload directory path."""
+    if "upload_dir" not in st.session_state:
+        st.session_state["upload_dir"] = tempfile.mkdtemp(prefix="smartblogger_uploads_")
+    return st.session_state["upload_dir"]
+
+
 def process_uploaded_files(uploaded_files):
     """Process uploaded files and return file paths"""
     if not uploaded_files:
@@ -74,11 +81,12 @@ def process_uploaded_files(uploaded_files):
 
     file_paths = []
     with st.spinner("Processing uploads..."):
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            for file in uploaded_files:
-                path = os.path.join(tmp_dir, file.name)
-                with open(path, "wb") as f:
-                    f.write(file.getbuffer())
-                file_paths.append(path)
+        upload_dir = _get_upload_dir()
+        os.makedirs(upload_dir, exist_ok=True)
+        for file in uploaded_files:
+            path = os.path.join(upload_dir, file.name)
+            with open(path, "wb") as f:
+                f.write(file.getbuffer())
+            file_paths.append(path)
 
     return file_paths
