@@ -2,7 +2,6 @@ import streamlit as st
 from ui.sidebar import render_sidebar
 from ui.dashboard import render_main_content
 from state_management import initialize_session_state, get_initial_state
-from workflow_runner import execute_workflow
 # import config
 
 

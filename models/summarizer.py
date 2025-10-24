@@ -1,8 +1,18 @@
 import os
 from typing import Optional
 from transformers import pipeline
-from ..llm_manager import local_llm_manager
-from utils.caching import get_cached_summary, set_cached_summary
+from .llm_manager import local_llm_manager
+
+# Simple in-module cache to avoid import errors if external caching is not available
+_SUMMARY_CACHE = {}
+
+def get_cached_summary(content: str, query: str):
+    key = (hash(content), query)
+    return _SUMMARY_CACHE.get(key)
+
+def set_cached_summary(content: str, query: str, summary: str):
+    key = (hash(content), query)
+    _SUMMARY_CACHE[key] = summary
 
 
 class HybridSummarizer:

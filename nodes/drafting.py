@@ -1,7 +1,7 @@
 from ..state import EnhancedBlogState
 from ..utils.formatting import format_research_for_drafting
 from ..utils.token_tracking import track_token_usage
-from models.llm_manager import llm_manage
+from models.llm_manager import local_llm_manager
 import json
 
 
@@ -21,7 +21,7 @@ def blog_structuring_node(state: EnhancedBlogState) -> EnhancedBlogState:
             next_action="draft_section"
         )
 
-    writer_llm = llm_manager.get_writer()
+    writer_llm = local_llm_manager.get_writer()
 
     # Include research context if available
     research_context = state.research_context or {}
@@ -86,7 +86,7 @@ def section_drafting_node(state: EnhancedBlogState) -> EnhancedBlogState:
         return state.update(next_action="completion")
 
     section = state.current_section
-    writer_llm = llm_manager.get_writer()
+    writer_llm = local_llm_manager.get_writer()
 
     # Create optimized prompt with research context
     research_context = state.research_context or {}

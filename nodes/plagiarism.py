@@ -1,7 +1,7 @@
-from ..state import EnhancedBlogState
-from ..utils.token_tracking import track_token_usage
+from state import EnhancedBlogState
+from utils.token_tracking import track_token_usage
 from models.plagiarism import plagiarism_detector
-from models.llm_manager import llm_manager
+from models.llm_manager import local_llm_manager
 import random
 
 
@@ -25,11 +25,11 @@ def plagiarism_check_node(state: EnhancedBlogState) -> EnhancedBlogState:
     ai_result = plagiarism_detector.analyze_content(content, updated_fingerprints)
 
     # Initialize results
-    results = {'ai': ai_result}
+    results = {"ai": ai_result}
 
     # Should we do API check?
     if should_check_content(state, content):
-        # Simulated API response (replace with actual Copyleaks call)
+        # Simulated API response (replace with actual external checker)
         results["api"] = {"score": random.randint(0, 30)}
         updated_credits = state.free_tier_credits - 1
     else:
@@ -43,7 +43,7 @@ def plagiarism_check_node(state: EnhancedBlogState) -> EnhancedBlogState:
         content_fingerprints=updated_fingerprints,
         plagiarism_checks=updated_checks,
         free_tier_credits=updated_credits,
-        next_action="evaluate_plagiarism"
+        next_action="evaluate_plagiarism",
     )
 
 
@@ -58,24 +58,27 @@ def evaluate_plagiarism_node(state: EnhancedBlogState) -> EnhancedBlogState:
     needs_rewrite = False
     feedback = ""
 
-    # Check API results
-    if "api" in checks and checks["api"].get("score", 0) > 15:  # Use your PLAGIARISM_THRESHOLD
+    # Check API results (use default threshold 15 if not configured)
+    api_score = checks.get("api", {}).get("score", 0)
+    if api_score > 15:
         needs_rewrite = True
-        feedback += f"API similarity score {checks['api']['score']}% exceeds threshold. "
+        feedback += f"API similarity score {api_score}% exceeds threshold. "
 
     # Check AI analysis
-    if "ai" in checks and checks["ai"].get("risk_score", 0) > 70:
+    ai = checks.get("ai", {})
+    if ai.get("risk_score", 0) > 70:
         needs_rewrite = True
-        feedback += f"High AI risk score {checks['ai']['risk_score']}/100. "
+        feedback += f"High AI risk score {ai['risk_score']}/100. "
 
-    if checks.get("ai", {}).get("flagged_phrases"):
-        feedback += f"Flagged phrases: {', '.join(checks['ai']['flagged_phrases'][:3])}. "
+    flagged = ai.get("flagged_phrases") or []
+    if flagged:
+        feedback += f"Flagged phrases: {', '.join(flagged[:3])}. "
 
     if needs_rewrite:
         return state.update(
             plagiarism_feedback=feedback,
             needs_rewrite=True,
-            next_action="rewrite_section"
+            next_action="rewrite_section",
         )
     else:
         return state.update(next_action="completion")
@@ -106,41 +109,35 @@ def rewrite_section_node(state: EnhancedBlogState) -> EnhancedBlogState:
     5. Keep the same core information
     """
 
-    writer_llm = llm_manager.get_writer()
+    writer_llm = local_llm_manager.get_writer()
     response = writer_llm.invoke(prompt)
     updated_state = track_token_usage(state, response)
 
     # Update revision history
-    updated_history = state.revision_history.copy()
+    updated_history = updated_state.revision_history.copy()
     section_history = updated_history.get(section_id, [])
     section_history.append(response.content)
     updated_history[section_id] = section_history
 
     # Update section draft
-    updated_drafts = state.section_drafts.copy()
+    updated_drafts = updated_state.section_drafts.copy()
     updated_drafts[section_id] = response.content
 
     return updated_state.update(
         section_drafts=updated_drafts,
         revision_history=updated_history,
         needs_rewrite=False,
-        next_action="plagiarism_check"  # Re-check
+        next_action="plagiarism_check",  # Re-check
     )
 
 
 def should_check_content(state: EnhancedBlogState, content: str) -> bool:
     """Heuristics to conserve API credits"""
-    # Skip if no credits
     if state.free_tier_credits <= 0:
         return False
-
-    # Skip short sections
     if len(content.split()) < 150:
         return False
-
-    # Skip code-heavy content
     code_keywords = ["def ", "class ", "import ", "function ", "{", "}"]
     if any(kw in content for kw in code_keywords):
         return False
-
     return True

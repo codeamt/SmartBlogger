@@ -1,6 +1,6 @@
 from ..state import EnhancedBlogState
 from ..utils.token_tracking import track_token_usage
-from models.llm_manager import llm_manager
+from models.llm_manager import local_llm_manager
 
 
 def process_code_node(state: EnhancedBlogState) -> EnhancedBlogState:
@@ -9,7 +9,7 @@ def process_code_node(state: EnhancedBlogState) -> EnhancedBlogState:
         return state.update(next_action="research_coordinator")
 
     content = state.source_code[:10000]
-    writer_llm = llm_manager.get_writer()
+    writer_llm = local_llm_manager.get_writer()
 
     response = writer_llm.invoke([
         ("system", "You're a senior developer. Provide technical analysis in 3-5 key points."),
@@ -31,7 +31,7 @@ def process_docs_node(state: EnhancedBlogState) -> EnhancedBlogState:
         return state.update(next_action="research_coordinator")
 
     docs_text = "\n\n".join(state.documents[:3])[:10000]
-    researcher_llm = llm_manager.get_researcher()
+    researcher_llm = local_llm_manager.get_researcher()
 
     response = researcher_llm.invoke([
         ("system", "You're a research analyst. Extract core concepts."),
@@ -57,7 +57,7 @@ def process_both_node(state: EnhancedBlogState) -> EnhancedBlogState:
 ### DOCUMENTS
 {"\n\n".join(state.documents)[:5000]}"""
 
-    researcher_llm = llm_manager.get_researcher()
+    researcher_llm = local_llm_manager.get_researcher()
     response = researcher_llm.invoke([
         ("system", "You're a technical integrator. Find connections between code and docs."),
         ("human", f"Create unified technical overview:\n{combined}")

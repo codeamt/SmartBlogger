@@ -1,6 +1,6 @@
 from ..state import EnhancedBlogState
 from ..utils.token_tracking import track_token_usage
-from models.llm_manager import llm_manager
+from models.llm_manager import local_llm_manager
 import json
 
 
@@ -48,7 +48,7 @@ def optimize_research_queries(state: EnhancedBlogState, total_tokens: int) -> li
     """
 
     try:
-        researcher_llm = llm_manager.get_researcher()
+        researcher_llm = local_llm_manager.get_researcher()
         response = researcher_llm.invoke([
             ("system",
              "You are a research strategist. Create focused, actionable research queries. Output valid JSON only."),
