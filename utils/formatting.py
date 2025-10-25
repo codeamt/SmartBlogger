@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 def format_research_for_drafting(research_context: Dict, current_section: Dict) -> str:
     """Format research specifically for the current section"""
     if not research_context:

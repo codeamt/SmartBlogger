@@ -2,7 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import time
-from ...state import EnhancedBlogState
+from state import EnhancedBlogState
 from .perplexity import execute_perplexity_search
 
 def execute_github_search(query: str, state: EnhancedBlogState) -> list:

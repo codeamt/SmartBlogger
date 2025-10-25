@@ -81,7 +81,19 @@ def evaluate_plagiarism_node(state: EnhancedBlogState) -> EnhancedBlogState:
             next_action="rewrite_section",
         )
     else:
-        return state.update(next_action="completion")
+        # Advance to next section if available; otherwise complete
+        sections = state.sections or []
+        current_id = state.current_section.get("id") if state.current_section else None
+        next_section = None
+        for idx, s in enumerate(sections):
+            if s.get("id") == current_id:
+                if idx + 1 < len(sections):
+                    next_section = sections[idx + 1]
+                break
+        if next_section:
+            return state.update(current_section=next_section, next_action="draft_section")
+        else:
+            return state.update(next_action="completion")
 
 
 def rewrite_section_node(state: EnhancedBlogState) -> EnhancedBlogState:

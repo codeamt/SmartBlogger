@@ -43,6 +43,64 @@ def render_sidebar() -> dict:
             q.strip() for q in user_inputs["research_focus"].split(",")
         ]
 
+        # Writing style options
+        st.divider()
+        st.subheader("✍️ Writing Style")
+        
+        user_inputs["tone"] = st.selectbox(
+            "Tone",
+            ["Professional", "Conversational", "Academic", "Tutorial", "Enthusiastic"],
+            index=0
+        )
+        
+        user_inputs["target_audience"] = st.selectbox(
+            "Target Audience",
+            ["Developers", "Technical Leaders", "Beginners", "General Tech Audience", "Researchers"],
+            index=0
+        )
+        
+        user_inputs["writing_style"] = st.multiselect(
+            "Style Preferences",
+            ["Include code examples", "Add diagrams/visuals", "Step-by-step guides", "Real-world examples", "Comparative analysis"],
+            default=["Include code examples"]
+        )
+        
+        # Custom questions
+        st.divider()
+        st.subheader("❓ Custom Questions")
+        st.caption("Add specific questions you want the blog to answer")
+        
+        # Initialize questions in session state if not present
+        if "custom_questions" not in st.session_state:
+            st.session_state.custom_questions = []
+        
+        new_question = st.text_input(
+            "Add a question",
+            placeholder="e.g., How does this compare to alternative approaches?",
+            key="new_question_input"
+        )
+        
+        col1, col2 = st.columns([3, 1])
+        with col1:
+            if st.button("➕ Add Question", use_container_width=True):
+                if new_question and new_question.strip():
+                    st.session_state.custom_questions.append(new_question.strip())
+                    st.rerun()
+        
+        # Display and manage questions
+        if st.session_state.custom_questions:
+            st.caption(f"{len(st.session_state.custom_questions)} question(s) added:")
+            for idx, q in enumerate(st.session_state.custom_questions):
+                col1, col2 = st.columns([4, 1])
+                with col1:
+                    st.text(f"{idx+1}. {q}")
+                with col2:
+                    if st.button("🗑️", key=f"del_q_{idx}", help="Remove"):
+                        st.session_state.custom_questions.pop(idx)
+                        st.rerun()
+        
+        user_inputs["custom_questions"] = st.session_state.custom_questions
+
         # Model info
         st.divider()
         from config import ModelConfig

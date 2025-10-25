@@ -1,11 +1,11 @@
-from ...state import EnhancedBlogState
+from state import EnhancedBlogState
 import os
 import concurrent.futures
 from .arxiv import execute_arxiv_search
 from .github import execute_github_search
 from .substack import execute_substack_search
 from .perplexity import execute_perplexity_search
-from ...utils.research_organizer import organize_research_results
+from utils.research_organizer import organize_research_results
 
 
 def research_node(state: EnhancedBlogState) -> EnhancedBlogState:
@@ -80,11 +80,10 @@ def execute_parallel_research(query: str, sources: list, state: EnhancedBlogStat
                 future = executor.submit(execute_perplexity_search, query, state)
                 future_to_source[future] = "perplexity"
 
-        # Collect results with timeout
-        for future in concurrent.futures.as_completed(future_to_source, timeout=30):
-            source = future_to_source[future]
+        # Collect results with per-future timeout to avoid dropping remaining futures
+        for future, source in list(future_to_source.items()):
             try:
-                results[source] = future.result()
+                results[source] = future.result(timeout=30)
             except Exception as e:
                 print(f"Research failed for {source}: {e}")
                 results[source] = []

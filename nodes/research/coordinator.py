@@ -1,7 +1,8 @@
-from ..state import EnhancedBlogState
-from ..utils.token_tracking import track_token_usage
+from state import EnhancedBlogState
+from utils.token_tracking import track_token_usage
 from models.llm_manager import local_llm_manager
 import json
+import re
 
 
 def research_coordinator_node(state: EnhancedBlogState) -> EnhancedBlogState:
@@ -34,7 +35,7 @@ def optimize_research_queries(state: EnhancedBlogState, total_tokens: int) -> li
     CONTENT:
     {content_preview}
 
-    USER RESEARCH FOCUS: {state.research_focus or 'technical documentation'}
+    USER RESEARCH FOCUS: {getattr(state, 'research_focus', None) or 'technical documentation'}
 
     Generate JSON output:
     {{
@@ -55,8 +56,39 @@ def optimize_research_queries(state: EnhancedBlogState, total_tokens: int) -> li
             ("human", prompt)
         ])
 
-        result = json.loads(response.content)
-        return result.get("queries", ["technical documentation", "best practices"])
+        raw = response.content or ""
+        try:
+            result = json.loads(raw)
+        except Exception:
+            json_block = None
+            if "```" in raw:
+                parts = re.findall(r"```(?:json)?\s*(\{[\s\S]*?\})\s*```", raw)
+                if parts:
+                    json_block = parts[0]
+            if not json_block:
+                start = raw.find('{')
+                end = raw.rfind('}')
+                if start != -1 and end != -1 and end > start:
+                    json_block = raw[start:end+1]
+            if json_block:
+                result = json.loads(json_block)
+            else:
+                raise
+        queries = result.get("queries", ["technical documentation", "best practices"]) or []
+        # Normalize to list[str]
+        normalized = []
+        for q in queries:
+            if isinstance(q, str):
+                s = q.strip()
+                if s:
+                    normalized.append(s)
+            elif isinstance(q, dict):
+                s = str(q.get("query", "")).strip()
+                if s:
+                    normalized.append(s)
+        if not normalized:
+            normalized = ["technical documentation", "best practices"]
+        return normalized
 
     except Exception as e:
         print(f"Query optimization failed: {e}")
@@ -75,15 +107,16 @@ def generate_research_plan(queries: list, state: EnhancedBlogState) -> dict:
 
     for i, query in enumerate(queries):
         priority = "high" if i == 0 else "medium" if i == 1 else "low"
+        bucket = f"{priority}_priority"
 
         # Assign sources based on query type and priority
         if "github" in research_sources and any(
                 keyword in query.lower() for keyword in ["library", "framework", "package", "implementation"]):
-            plan[priority].append({"query": query, "sources": ["github", "web"]})
+            plan[bucket].append({"query": query, "sources": ["github", "web"]})
         elif "arxiv" in research_sources and any(
                 keyword in query.lower() for keyword in ["paper", "research", "study", "algorithm"]):
-            plan[priority].append({"query": query, "sources": ["arxiv", "web"]})
+            plan[bucket].append({"query": query, "sources": ["arxiv", "web"]})
         else:
-            plan[priority].append({"query": query, "sources": research_sources})
+            plan[bucket].append({"query": query, "sources": research_sources})
 
     return plan

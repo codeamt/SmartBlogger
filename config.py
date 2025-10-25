@@ -1,5 +1,11 @@
 import os
 from typing import Dict, Any
+try:
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except Exception:
+    # dotenv is optional; if not installed, skip silently
+    pass
 
 
 # Local LLM settings

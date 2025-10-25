@@ -6,6 +6,13 @@ class EnhancedBlogState(BaseModel):
     # Inputs
     source_code: Optional[str] = None
     uploaded_files: Optional[List[str]] = None
+    research_focus: Optional[str] = None
+    
+    # Writing style preferences
+    tone: Optional[str] = "Professional"
+    target_audience: Optional[str] = "Developers"
+    writing_style: Optional[List[str]] = Field(default_factory=list)
+    custom_questions: Optional[List[str]] = Field(default_factory=list)
 
     # Content pipeline
     documents: Optional[List[str]] = None

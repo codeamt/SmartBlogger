@@ -22,11 +22,32 @@ def initialize_session_state():
 
 def get_initial_state(user_inputs: dict) -> EnhancedBlogState:
     """Create initial workflow state from user inputs"""
+    # Normalize research queries to list[str]
+    rq_raw = user_inputs.get("research_queries", []) or []
+    if isinstance(rq_raw, list):
+        normalized_rq = []
+        for it in rq_raw:
+            if isinstance(it, str):
+                s = it.strip()
+                if s:
+                    normalized_rq.append(s)
+            elif isinstance(it, dict):
+                q = (it.get("query") or "").strip()
+                if q:
+                    normalized_rq.append(q)
+    else:
+        normalized_rq = []
+
     return EnhancedBlogState(
         source_code=user_inputs.get("code_input"),
         uploaded_files=user_inputs.get("file_paths", []),
-        research_queries=user_inputs.get("research_queries", []),
-        research_sources=user_inputs.get("research_sources", []),
+        research_focus=user_inputs.get("research_focus"),
+        research_queries=normalized_rq,
+        research_sources=[s.lower() for s in user_inputs.get("research_sources", [])],
+        tone=user_inputs.get("tone", "Professional"),
+        target_audience=user_inputs.get("target_audience", "Developers"),
+        writing_style=user_inputs.get("writing_style", []),
+        custom_questions=user_inputs.get("custom_questions", []),
         sections=None,
         current_section=None,
         section_drafts={},

@@ -15,6 +15,8 @@ def build_workflow():
         ("research_coordinator", research_coordinator_node),
         ("conduct_research", research_node),
         ("blog_structuring", blog_structuring_node),
+        ("conditional_synthesis", conditional_research_synthesis_node),
+        ("introduction_synthesis", introduction_synthesis_node),
         ("draft_section", section_drafting_node),
         ("plagiarism_check", plagiarism_check_node),
         ("evaluate_plagiarism", evaluate_plagiarism_node),
@@ -35,7 +37,9 @@ def build_workflow():
     builder.add_edge("process_both", "research_coordinator")
     builder.add_edge("research_coordinator", "conduct_research")
     builder.add_edge("conduct_research", "blog_structuring")
-    builder.add_edge("blog_structuring", "draft_section")
+    builder.add_edge("blog_structuring", "conditional_synthesis")
+    builder.add_edge("conditional_synthesis", "introduction_synthesis")
+    builder.add_edge("introduction_synthesis", "draft_section")
     builder.add_edge("draft_section", "plagiarism_check")
     builder.add_edge("plagiarism_check", "evaluate_plagiarism")
     builder.add_edge("rewrite_section", "plagiarism_check")
@@ -51,7 +55,7 @@ def build_workflow():
     builder.add_conditional_edges(
         "evaluate_plagiarism",
         lambda s: s.next_action,
-        {"rewrite_section": "rewrite_section", "completion": "completion"}
+        {"rewrite_section": "rewrite_section", "draft_section": "draft_section", "completion": "completion"}
     )
     
     return builder.compile()

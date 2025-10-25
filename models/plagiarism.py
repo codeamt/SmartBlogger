@@ -16,11 +16,15 @@ class PlagiarismDetector:
             "fingerprint_match": False,
             "recommendations": [],
             "confidence": "low",
+            "overlaps": [],  # list of overlapping n-grams for transparency
         }
 
         # Content fingerprinting
         fingerprint = self._create_fingerprint(content)
         analysis["fingerprint_match"] = fingerprint in existing_fingerprints
+
+        # N-gram overlap within content (self-similarity / repetition)
+        analysis["overlaps"] = self._ngram_overlaps(content, n=5)
 
         # AI-based analysis
         ai_analysis = self._ai_plagiarism_check(content)
@@ -68,6 +72,20 @@ class PlagiarismDetector:
             return data
         except Exception:
             return {"risk_score": 0, "flagged_phrases": [], "confidence": "low"}
+
+    def _ngram_overlaps(self, content: str, n: int = 5) -> List[str]:
+        """Return top repeated n-grams (self-overlap indicator)."""
+        words = [w for w in content.lower().split() if w]
+        if len(words) < n:
+            return []
+        counts: Dict[str, int] = {}
+        for i in range(len(words) - n + 1):
+            gram = " ".join(words[i:i+n])
+            counts[gram] = counts.get(gram, 0) + 1
+        # Keep n-grams that appear more than once
+        repeated = [(g, c) for g, c in counts.items() if c > 1]
+        repeated.sort(key=lambda x: x[1], reverse=True)
+        return [f"{g} (x{c})" for g, c in repeated[:5]]
 
     def _structural_analysis(self, content: str) -> List[str]:
         """Analyze content structure for plagiarism indicators and return recommendations"""

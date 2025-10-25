@@ -18,24 +18,44 @@ def organize_research_results(all_results: Dict) -> Dict:
             if source_name not in organized["by_source"]:
                 organized["by_source"][source_name] = []
 
-            organized["by_source"][source_name].extend(results)
+            # Normalize results to list of dicts
+            normalized: List[Dict] = []
+            for item in (results or []):
+                if isinstance(item, dict):
+                    normalized.append(item)
+                elif isinstance(item, str):
+                    text = item.strip()
+                    normalized.append({
+                        "title": (text[:60] + ("…" if len(text) > 60 else "")) or f"{source_name} result",
+                        "content": text
+                    })
+                else:
+                    s = str(item)
+                    normalized.append({
+                        "title": (s[:60] + ("…" if len(s) > 60 else "")) or f"{source_name} result",
+                        "content": s
+                    })
+
+            organized["by_source"][source_name].extend(normalized)
 
             # Extract key insights and citations
-            for result in results[:3]:  # Top 3 results per source
-                if source_name == "arxiv" and "title" in result:
+            for result in normalized[:3]:  # Top 3 results per source
+                if not isinstance(result, dict):
+                    continue
+                if source_name == "arxiv" and result.get("title") and result.get("url"):
                     organized["citations"].append({
                         "type": "academic",
-                        "title": result["title"],
-                        "url": result["url"],
+                        "title": result.get("title", ""),
+                        "url": result.get("url", ""),
                         "authors": result.get("authors", []),
                         "year": extract_year(result.get("published", ""))
                     })
-                elif "url" in result:
+                elif result.get("url"):
                     organized["citations"].append({
                         "type": "web",
                         "title": result.get("title", "Source"),
-                        "url": result["url"],
-                        "snippet": result.get("content", "")[:100]
+                        "url": result.get("url", ""),
+                        "snippet": (result.get("content", "") or "")[:100]
                     })
 
     # Deduplicate citations

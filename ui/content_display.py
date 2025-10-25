@@ -9,28 +9,92 @@ def render_blog_content(result_state: dict):
         st.info("No content generated yet.")
         return
 
-    sections = result_state.get("sections", [])
-    section_drafts = result_state.get("section_drafts", {})
+    # Check if we have a final assembled blog post
+    completion_summary = result_state.get("research_context", {}).get("completion_summary", {})
+    final_content = completion_summary.get("final_content")
+    
+    if final_content:
+        # Metrics row
+        sections = result_state.get("sections", [])
+        total_sections = len(sections)
+        total_words = len(final_content.split())
+        
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Sections", total_sections)
+        col2.metric("Total Words", f"{total_words:,}")
+        col3.metric("Status", "✅ Complete")
+        
+        st.divider()
+        
+        # Info box directing to editor
+        st.info("💡 **Tip**: Use the **✏️ Editor** tab to preview and edit the complete blog post!")
+        
+        # Download button prominently at top
+        st.download_button(
+            label="📥 Download Complete Blog Post",
+            data=final_content,
+            file_name="blog_post.md",
+            mime="text/markdown",
+            type="primary",
+            use_container_width=True
+        )
+        
+        st.divider()
+        
+        # Individual sections in collapsible expanders
+        st.subheader("📑 Sections Breakdown")
+        st.caption("Review individual sections below. For full preview and editing, use the Editor tab.")
+        
+        section_drafts = result_state.get("section_drafts", {})
+        for idx, section in enumerate(sections, 1):
+            render_section_compact(idx, section, section_drafts, result_state)
+    else:
+        # Fallback to section-by-section display
+        sections = result_state.get("sections", [])
+        section_drafts = result_state.get("section_drafts", {})
 
-    if not sections:
-        # Fallback: display all drafts
-        render_fallback_content(section_drafts)
-        return
+        if not sections:
+            render_fallback_content(section_drafts)
+            return
 
-    # Display sections in order
-    for section in sections:
-        render_section(section, section_drafts, result_state)
+        st.subheader("📑 Generated Sections")
+        for idx, section in enumerate(sections, 1):
+            render_section_compact(idx, section, section_drafts, result_state)
 
 
-def render_section(section: dict, section_drafts: dict, result_state: dict):
-    """Render a single section with revisions"""
+def render_section_compact(idx: int, section: dict, section_drafts: dict, result_state: dict):
+    """Render a single section in compact expander format"""
     section_id = section["id"]
     content = section_drafts.get(section_id, "")
 
     if not content:
         return
 
-    with st.expander(f"### {section['title']}", expanded=True):
+    # Calculate word count for this section
+    word_count = len(content.split())
+    title = section.get('title', f'Section {idx}')
+    description = section.get('description', '')
+    
+    # Expander label with metadata
+    label = f"**{idx}. {title}** • {word_count} words"
+    
+    with st.expander(label, expanded=False):
+        if description:
+            st.caption(f"_{description}_")
+            st.divider()
+        st.markdown(content)
+        render_revision_history(section_id, result_state)
+
+
+def render_section(section: dict, section_drafts: dict, result_state: dict):
+    """Legacy render for backward compatibility"""
+    section_id = section["id"]
+    content = section_drafts.get(section_id, "")
+
+    if not content:
+        return
+
+    with st.expander(f"{section['title']}", expanded=False):
         st.markdown(content)
         render_revision_history(section_id, result_state)
 

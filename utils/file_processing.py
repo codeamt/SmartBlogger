@@ -17,15 +17,3 @@ def extract_text_from_pdf(pdf_path: str) -> str:
     except Exception as e:
         print(f"Error processing PDF: {e}")
         return ""
-
-
-def track_token_usage(state: EnhancedBlogState, response) -> EnhancedBlogState:
-    """Update token usage from LLM response"""
-    usage = state.get("token_usage", {})
-    model = response.response_metadata.get("model", "unknown")
-
-    if "token_usage" in response.response_metadata:
-        tokens = response.response_metadata["token_usage"]["total_tokens"]
-        usage[model] = usage.get(model, 0) + tokens
-
-    return {**state, "token_usage": usage}

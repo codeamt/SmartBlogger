@@ -17,6 +17,11 @@ from .drafting import (
     section_drafting_node
 )
 
+from .introduction import (
+    introduction_synthesis_node,
+    conditional_research_synthesis_node
+)
+
 from .plagiarism import (
     plagiarism_check_node,
     evaluate_plagiarism_node,

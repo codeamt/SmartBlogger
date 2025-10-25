@@ -1,5 +1,5 @@
-from ..state import EnhancedBlogState
-from ..utils.file_processing import extract_text_from_pdf
+from state import EnhancedBlogState
+from utils.file_processing import extract_text_from_pdf
 
 
 def input_processing_node(state: EnhancedBlogState) -> EnhancedBlogState:

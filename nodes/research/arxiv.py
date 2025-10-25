@@ -1,30 +1,40 @@
-from langchain_community.retrievers import ArxivRetriever
 from models.summarizer import summarizer
-from ...state import EnhancedBlogState
+from state import EnhancedBlogState
 
 
 def execute_arxiv_search(query: str, state: EnhancedBlogState) -> list:
-    """Search arXiv and return a list of structured results for a single query."""
+    """Search arXiv via the arxiv package and return normalized results."""
     try:
-        arxiv = ArxivRetriever(load_max_docs=3)
-        docs = arxiv.get_relevant_documents(query=query)
+        import arxiv  # lightweight client
+    except Exception as e:
+        print(f"Arxiv package not available: {e}")
+        return []
+
+    try:
+        search = arxiv.Search(query=query, max_results=3, sort_by=arxiv.SortCriterion.Relevance)
         results = []
-        for doc in docs:
+        for result in search.results():
             try:
+                abstract = result.summary or ""
                 summary = summarizer.summarize(
-                    content=doc.page_content,
+                    content=abstract,
                     query=query,
                     state=state.dict() if hasattr(state, "dict") else {}
                 )
             except Exception:
-                summary = doc.page_content[:300] + "..."
+                summary = (result.summary or "")[:300] + "..."
+
+            authors = [a.name for a in (result.authors or [])]
+            published = getattr(result, "published", None)
+            url = getattr(result, "entry_id", None) or getattr(result, "pdf_url", None) or ""
+
             results.append({
-                "title": doc.metadata.get("Title") or doc.metadata.get("title", "arXiv paper"),
-                "url": doc.metadata.get("Entry ID") or doc.metadata.get("entry_id", ""),
-                "content": doc.page_content[:500],
+                "title": getattr(result, "title", None) or "arXiv paper",
+                "url": url,
+                "content": (result.summary or "")[:500],
                 "summary": summary,
-                "authors": doc.metadata.get("Authors", []),
-                "published": doc.metadata.get("Published", "")
+                "authors": authors,
+                "published": str(published) if published else ""
             })
         return results
     except Exception as e:
