@@ -21,7 +21,11 @@ def execute_workflow_with_status(user_inputs: dict):
             initial_state = get_initial_state(user_inputs)
 
             st.write("Executing workflow...")
-            result = workflow.invoke(initial_state)
+            # Allow deeper rewrite/evaluation cycles while still bounded
+            result = workflow.invoke(
+                initial_state,
+                config={"recursion_limit": 80},
+            )
 
             # Ensure UI receives a plain dict
             st.session_state.result = result.dict() if hasattr(result, "dict") else result

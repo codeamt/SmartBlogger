@@ -29,6 +29,7 @@ dependencies = [
     "streamlit-jodit>=3.1.0",
     "markdown>=3.9",
     "markdownify>=1.2.0",
+    "streamlit-shadcn-ui>=0.1.19",
 ]
 
 [project.optional-dependencies]

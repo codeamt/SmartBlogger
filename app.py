@@ -1,28 +1,26 @@
 import streamlit as st
 from ui.sidebar import render_sidebar
 from ui.dashboard import render_main_content
-from state_management import initialize_session_state, get_initial_state
-# import config
+from ui.theme import apply_custom_theme
+from ui.state import ensure_defaults
 
 
 def main():
-    """Minimal main application entry point"""
+    """Main entry: classic studio with original theme and unified sidebar+dashboard flow."""
     st.set_page_config(
-        page_title="Research-Powered Blog Assistant",
+        page_title="SmartBlogger",
         layout="wide",
-        page_icon="📝"
+        page_icon="✍️",
+        initial_sidebar_state="expanded",
     )
 
-    st.title("📝 Research-Powered Blog Assistant")
-    st.caption("Generate technical content with integrated research and plagiarism protection")
+    apply_custom_theme()
+    ensure_defaults()
 
-    # Initialize session state
-    initialize_session_state()
-
-    # Render sidebar and get user inputs
+    # Render sidebar and collect user inputs
     user_inputs = render_sidebar()
 
-    # Render main content area
+    # Render dashboard/studio main area
     render_main_content(user_inputs)
 
 

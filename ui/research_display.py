@@ -1,9 +1,10 @@
 import streamlit as st
+from ui.components import section_header, panel
 
 
 def render_research_details(result_state: dict):
     """Render research details"""
-    st.header("Research Details")
+    section_header("Research Details", icon="🔍", subtitle="Evidence and references from your sources")
 
     research_context = result_state.get("research_context", {})
     if not research_context:
@@ -28,7 +29,8 @@ def render_research_details(result_state: dict):
         return
 
     # Create tabs for each research source
-    render_research_tabs(sources, source_map)
+    with panel(subtle_title="Sources by provider"):
+        render_research_tabs(sources, source_map)
 
 
 def get_non_empty_sources(research_context: dict) -> list:

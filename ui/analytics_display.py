@@ -99,20 +99,23 @@ def render_token_analytics(result_state: dict):
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        # Pie chart of token distribution
+        # Pie chart of token distribution (Blues palette)
+        pie_colors = px.colors.sequential.Blues[max(0, len(px.colors.sequential.Blues) - len(usage)):] if usage else px.colors.sequential.Blues
         fig = go.Figure(data=[go.Pie(
             labels=list(usage.keys()),
             values=list(usage.values()),
             hole=0.4,
-            marker=dict(colors=px.colors.qualitative.Set3)
+            marker=dict(colors=pie_colors)
         )])
-        
         fig.update_layout(
             title="Token Distribution by Model",
             height=400,
-            showlegend=True
+            showlegend=True,
+            template="plotly_dark",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#E5E7EB",
         )
-        
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
@@ -137,18 +140,20 @@ def render_token_analytics(result_state: dict):
     fig_bar = go.Figure(data=[go.Bar(
         x=list(usage.keys()),
         y=list(usage.values()),
-        marker=dict(color=px.colors.qualitative.Pastel),
+        marker=dict(color="#7B8DA6"),
         text=list(usage.values()),
         textposition='auto'
     )])
-    
     fig_bar.update_layout(
         title="Tokens per Model",
         xaxis_title="Model",
         yaxis_title="Tokens",
-        height=350
+        height=350,
+        template="plotly_dark",
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        font_color="#E5E7EB",
     )
-    
     st.plotly_chart(fig_bar, use_container_width=True)
 
 
@@ -189,27 +194,29 @@ def render_research_analytics(result_state: dict):
             st.caption(f"{count} result(s)")
     
     with col2:
-        # Bar chart of research sources
+        # Bar chart of research sources (Blues)
         fig = go.Figure(data=[go.Bar(
             x=list(source_counts.keys()),
             y=list(source_counts.values()),
             marker=dict(
                 color=list(source_counts.values()),
-                colorscale='Viridis',
+                colorscale='Blues',
                 showscale=True,
                 colorbar=dict(title="Results")
             ),
             text=list(source_counts.values()),
             textposition='auto'
         )])
-        
         fig.update_layout(
             title="Research Results by Source",
             xaxis_title="Source",
             yaxis_title="Number of Results",
-            height=400
+            height=400,
+            template="plotly_dark",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#E5E7EB",
         )
-        
         st.plotly_chart(fig, use_container_width=True)
     
     # Research quality insights
@@ -295,7 +302,11 @@ def render_content_analytics(result_state: dict):
                 xaxis_title="Section",
                 yaxis_title="Words",
                 height=400,
-                xaxis_tickangle=-45
+                xaxis_tickangle=-45,
+                template="plotly_dark",
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#E5E7EB",
             )
             
             st.plotly_chart(fig, use_container_width=True)
@@ -402,11 +413,11 @@ def render_performance_analytics(result_state: dict):
             delta={'reference': 80, 'increasing': {'color': "green"}},
             gauge={
                 'axis': {'range': [None, 100]},
-                'bar': {'color': "darkblue"},
+                'bar': {'color': "#7B8DA6"},
                 'steps': [
-                    {'range': [0, 60], 'color': "lightcoral"},
-                    {'range': [60, 80], 'color': "lightyellow"},
-                    {'range': [80, 100], 'color': "lightgreen"}
+                    {'range': [0, 60], 'color': "#7f1d1d"},
+                    {'range': [60, 80], 'color': "#78350f"},
+                    {'range': [80, 100], 'color': "#14532d"}
                 ],
                 'threshold': {
                     'line': {'color': "red", 'width': 4},
@@ -415,8 +426,13 @@ def render_performance_analytics(result_state: dict):
                 }
             }
         ))
-        
-        fig.update_layout(height=300)
+        fig.update_layout(
+            height=300,
+            template="plotly_dark",
+            plot_bgcolor="rgba(0,0,0,0)",
+            paper_bgcolor="rgba(0,0,0,0)",
+            font_color="#E5E7EB",
+        )
         st.plotly_chart(fig, use_container_width=True)
         
         # Originality by section
@@ -426,7 +442,7 @@ def render_performance_analytics(result_state: dict):
                 y=originality_scores,
                 marker=dict(
                     color=originality_scores,
-                    colorscale='RdYlGn',
+                    colorscale='Blues',
                     cmin=0,
                     cmax=100,
                     showscale=True,
@@ -441,7 +457,11 @@ def render_performance_analytics(result_state: dict):
                 xaxis_title="Section",
                 yaxis_title="Originality (%)",
                 height=350,
-                xaxis_tickangle=-45
+                xaxis_tickangle=-45,
+                template="plotly_dark",
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font_color="#E5E7EB",
             )
             
             # Add threshold line

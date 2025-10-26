@@ -8,89 +8,120 @@ from datetime import datetime
 
 def render_editor(result_state: dict):
     """
-    Render editor interface for final blog post editing.
-    
-    Note: This is a basic implementation using st.text_area.
-    For full WYSIWYG, install streamlit-jodit:
-        pip install streamlit-jodit
-    Then uncomment the advanced implementation below.
+    Render editor interface for final blog post editing with writing-focused design.
     """
-    
-    st.header("✏️ Edit Blog Post")
     
     # Get final content
     completion_summary = result_state.get("research_context", {}).get("completion_summary", {})
     final_content = completion_summary.get("final_content", "")
     
     if not final_content:
-        st.info("📝 Generate a blog post first to enable editing.")
-        st.caption("Go to the sidebar, fill in your inputs, and click 'Generate Blog Post'")
+        st.markdown("""
+        <div style="text-align: center; padding: 4rem 2rem;">
+            <h2 style="color: #6B6B6B; font-weight: 400;">No content to edit yet</h2>
+            <p style="color: #8B8B8B; font-size: 1.125rem; margin-top: 1rem;">
+                Generate a blog post first, then return here to refine and polish your content.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
         return
     
-    # Editor mode selector
+    # Editor mode selector with cleaner design
+    st.markdown("""
+    <div style="margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem; margin-bottom: 0.5rem;">Edit Your Post</h2>
+        <p style="color: #6B6B6B; font-size: 1.125rem;">Refine and perfect your content</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     editor_mode = st.radio(
         "Editor Mode",
-        ["📝 Markdown Editor", "👁️ Preview Only"],
+        ["📝 Edit", "👁️ Preview"],
         horizontal=True,
-        help="Choose between editing markdown directly or viewing the preview"
+        label_visibility="collapsed"
     )
     
-    if editor_mode == "📝 Markdown Editor":
+    if editor_mode == "📝 Edit":
         render_markdown_editor(final_content, result_state)
     else:
         render_preview_only(final_content, result_state)
 
 
 def render_markdown_editor(final_content: str, result_state: dict):
-    """Render markdown editor with live preview"""
+    """Render markdown editor with live preview and writing-focused design"""
     
     # Initialize edited content in session state
     if "edited_content" not in st.session_state:
         st.session_state.edited_content = final_content
     
-    # Reset button
-    col1, col2, col3 = st.columns([2, 1, 1])
+    # Action buttons with cleaner design
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     with col1:
-        st.caption("💡 Tip: Edit the markdown on the left, see the preview on the right")
-    with col2:
-        if st.button("🔄 Reset to Original"):
-            st.session_state.edited_content = final_content
-            st.rerun()
-    with col3:
-        if st.button("💾 Save Version"):
-            save_version(st.session_state.edited_content)
-            st.success("Version saved!")
-    
-    st.divider()
-    
-    # Split view: Editor + Preview
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📝 Editor")
-        
         # Calculate stats
         word_count = len(st.session_state.edited_content.split())
         char_count = len(st.session_state.edited_content)
+        st.markdown(f"""
+        <div style="padding: 0.5rem 0;">
+            <span style="color: #6B6B6B; font-size: 0.875rem;">
+                {word_count:,} words · {char_count:,} characters
+            </span>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        if st.button("↻ Reset", width='stretch'):
+            st.session_state.edited_content = final_content
+            st.rerun()
+    with col3:
+        if st.button("💾 Save", width='stretch'):
+            save_version(st.session_state.edited_content)
+            st.success("Saved!")
+    with col4:
+        st.download_button(
+            label="⬇ Export",
+            data=st.session_state.edited_content,
+            file_name="blog_post.md",
+            mime="text/markdown",
+            width='stretch'
+        )
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Split view: Editor + Preview with writing-focused styling
+    col1, col2 = st.columns([1, 1], gap="large")
+    
+    with col1:
+        st.markdown("**Editor**")
         
-        st.caption(f"Words: {word_count:,} | Characters: {char_count:,}")
-        
-        # Text area for editing
+        # Text area for editing with custom styling
         edited = st.text_area(
             "Markdown Content",
             value=st.session_state.edited_content,
-            height=600,
+            height=650,
             key="markdown_editor",
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            help="Write in Markdown format"
         )
         
         # Update session state
         st.session_state.edited_content = edited
     
     with col2:
-        st.subheader("👁️ Live Preview")
+        st.markdown("**Live Preview**")
         
-        # Preview with scrollable container
+        # Preview with scrollable container and custom styling
+        st.markdown("""
+        <style>
+        .preview-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #E6E6E6;
+            height: 650px;
+            overflow-y: auto;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
         with st.container(height=650):
             st.markdown(st.session_state.edited_content)
     
@@ -104,34 +135,82 @@ def render_markdown_editor(final_content: str, result_state: dict):
 
 
 def render_preview_only(final_content: str, result_state: dict):
-    """Render preview-only mode with download option"""
+    """Render preview-only mode with download option and elegant design"""
     
-    # Stats
+    # Stats with cleaner design
     sections = result_state.get("sections", [])
     word_count = len(final_content.split())
+    char_count = len(final_content)
     
+    st.markdown("""
+    <div style="display: flex; gap: 2rem; padding: 1.5rem; background: #F7F7F7; 
+                border-radius: 8px; margin-bottom: 2rem;">
+        <div>
+            <div style="font-size: 0.875rem; color: #8B8B8B; text-transform: uppercase; 
+                        letter-spacing: 0.05em; margin-bottom: 0.25rem;">Sections</div>
+            <div style="font-size: 1.75rem; font-weight: 600; color: #242424;">{}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.875rem; color: #8B8B8B; text-transform: uppercase; 
+                        letter-spacing: 0.05em; margin-bottom: 0.25rem;">Words</div>
+            <div style="font-size: 1.75rem; font-weight: 600; color: #242424;">{:,}</div>
+        </div>
+        <div>
+            <div style="font-size: 0.875rem; color: #8B8B8B; text-transform: uppercase; 
+                        letter-spacing: 0.05em; margin-bottom: 0.25rem;">Characters</div>
+            <div style="font-size: 1.75rem; font-weight: 600; color: #242424;">{:,}</div>
+        </div>
+    </div>
+    """.format(len(sections), word_count, char_count), unsafe_allow_html=True)
+    
+    # Download options
     col1, col2, col3 = st.columns(3)
-    col1.metric("Sections", len(sections))
-    col2.metric("Words", f"{word_count:,}")
-    col3.metric("Status", "✅ Complete")
+    with col1:
+        st.download_button(
+            label="⬇ Download Markdown",
+            data=final_content,
+            file_name="blog_post.md",
+            mime="text/markdown",
+            type="primary",
+            width='stretch'
+        )
+    with col2:
+        html_content = markdown_to_html_simple(final_content)
+        st.download_button(
+            label="⬇ Download HTML",
+            data=html_content,
+            file_name="blog_post.html",
+            mime="text/html",
+            width='stretch'
+        )
+    with col3:
+        medium_content = format_for_medium(final_content)
+        st.download_button(
+            label="⬇ Medium Format",
+            data=medium_content,
+            file_name="blog_post_medium.md",
+            mime="text/markdown",
+            width='stretch'
+        )
     
-    st.divider()
+    st.markdown("<br>", unsafe_allow_html=True)
     
-    # Download button
-    st.download_button(
-        label="📥 Download Blog Post",
-        data=final_content,
-        file_name="blog_post.md",
-        mime="text/markdown",
-        type="primary",
-        use_container_width=True
-    )
+    # Preview with reading-focused design
+    st.markdown("**Preview**")
+    st.markdown("""
+    <style>
+    .reading-container {
+        background: white;
+        padding: 3rem 4rem;
+        border-radius: 8px;
+        border: 1px solid #E6E6E6;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    </style>
+    """, unsafe_allow_html=True)
     
-    st.divider()
-    
-    # Preview
-    st.subheader("📄 Preview")
-    with st.container(height=600):
+    with st.container(height=650):
         st.markdown(final_content)
 
 
@@ -148,7 +227,7 @@ def render_action_buttons(edited_content: str):
             data=edited_content,
             file_name="blog_post_edited.md",
             mime="text/markdown",
-            use_container_width=True
+            width='stretch'
         )
     
     with col2:
@@ -159,7 +238,7 @@ def render_action_buttons(edited_content: str):
             data=html_content,
             file_name="blog_post.html",
             mime="text/html",
-            use_container_width=True
+            width='stretch'
         )
     
     with col3:
@@ -169,7 +248,7 @@ def render_action_buttons(edited_content: str):
             data=edited_content,
             file_name="blog_post.txt",
             mime="text/plain",
-            use_container_width=True
+            width='stretch'
         )
     
     with col4:
@@ -180,10 +259,10 @@ def render_action_buttons(edited_content: str):
             data=medium_content,
             file_name="blog_post_medium.md",
             mime="text/markdown",
-            use_container_width=True
+            width='stretch'
         )
-
-
+    
+    
 def render_version_history():
     """Render version history section"""
     

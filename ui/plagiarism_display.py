@@ -1,17 +1,20 @@
 import streamlit as st
+from ui.components import section_header, panel
 
 
 def render_plagiarism_report(result_state: dict):
     """Render plagiarism analysis results"""
-    st.header("Plagiarism Analysis")
+    section_header("Plagiarism Analysis", icon="⚖️", subtitle="Originality checks and flagged phrases")
 
     plagiarism_checks = result_state.get("plagiarism_checks", {}) if isinstance(result_state, dict) else {}
     if not plagiarism_checks:
         st.info("No plagiarism checks performed.")
         return
 
-    render_plagiarism_summary(plagiarism_checks)
-    render_detailed_checks(plagiarism_checks, result_state)
+    with panel(subtle_title="Overall summary"):
+        render_plagiarism_summary(plagiarism_checks)
+    with panel(subtle_title="Section details"):
+        render_detailed_checks(plagiarism_checks, result_state)
 
 
 def render_plagiarism_summary(plagiarism_checks: dict):
