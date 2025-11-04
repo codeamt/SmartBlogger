@@ -50,8 +50,12 @@ def research_node(state: EnhancedBlogState) -> EnhancedBlogState:
     existing_context = state.research_context or {}
     merged_context = {**existing_context, **organized_results}
 
+    # Check if any research failed
+    research_status = getattr(state, 'research_status', 'completed')
+    
     return state.update(
         research_context=merged_context,
+        research_status=research_status,
         next_action="blog_structuring"
     )
 

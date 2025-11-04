@@ -11,11 +11,14 @@ from .processing import (
 
 from .research.coordinator import research_coordinator_node
 from .research.researcher import research_node
+from .research.repo_indexer import repo_indexer_node
 
 from .drafting import (
     blog_structuring_node,
     section_drafting_node
 )
+
+from .seo_optimization import seo_optimization_node
 
 from .introduction import (
     introduction_synthesis_node,

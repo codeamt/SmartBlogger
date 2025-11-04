@@ -51,11 +51,8 @@ def process_both_node(state: EnhancedBlogState) -> EnhancedBlogState:
     if not state.source_code or not state.documents:
         return state.update(next_action="research_coordinator")
 
-    combined = f"""## SOURCE CODE
-{state.source_code[:5000]}
-
-### DOCUMENTS
-{"\n\n".join(state.documents)[:5000]}"""
+    documents_content = "\n\n".join(state.documents)[:5000]
+    combined = "## SOURCE CODE\n" + state.source_code[:5000] + "\n\n### DOCUMENTS\n" + documents_content
 
     researcher_llm = local_llm_manager.get_researcher()
     response = researcher_llm.invoke([
@@ -68,4 +65,23 @@ def process_both_node(state: EnhancedBlogState) -> EnhancedBlogState:
     return updated_state.update(
         content_summary=response.content,
         next_action="research_coordinator"
+    )
+
+
+def route_outline_node(state: EnhancedBlogState) -> EnhancedBlogState:
+    """Generate only an outline without full research and drafting"""
+    # Create a minimal content summary for outline generation
+    content_preview = ""
+    
+    if state.source_code:
+        content_preview = state.source_code[:1000]
+    elif state.documents:
+        content_preview = "\n\n".join(state.documents[:2])[:1000]
+    
+    # Set a simple content summary to trigger blog structuring
+    summary = f"Content for outline generation: {content_preview[:200]}..."
+    
+    return state.update(
+        content_summary=summary,
+        next_action="blog_structuring"
     )

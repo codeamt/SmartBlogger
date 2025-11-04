@@ -14,7 +14,9 @@ def build_workflow():
         ("process_both", process_both_node),
         ("research_coordinator", research_coordinator_node),
         ("conduct_research", research_node),
+        ("index_github_repos", repo_indexer_node),
         ("blog_structuring", blog_structuring_node),
+        ("seo_optimization", seo_optimization_node),
         ("conditional_synthesis", conditional_research_synthesis_node),
         ("introduction_synthesis", introduction_synthesis_node),
         ("draft_section", section_drafting_node),
@@ -36,8 +38,10 @@ def build_workflow():
     builder.add_edge("process_docs", "research_coordinator")
     builder.add_edge("process_both", "research_coordinator")
     builder.add_edge("research_coordinator", "conduct_research")
-    builder.add_edge("conduct_research", "blog_structuring")
-    builder.add_edge("blog_structuring", "conditional_synthesis")
+    builder.add_edge("conduct_research", "index_github_repos")
+    builder.add_edge("index_github_repos", "blog_structuring")
+    builder.add_edge("blog_structuring", "seo_optimization")
+    builder.add_edge("seo_optimization", "conditional_synthesis")
     builder.add_edge("conditional_synthesis", "introduction_synthesis")
     builder.add_edge("introduction_synthesis", "draft_section")
     builder.add_edge("draft_section", "plagiarism_check")

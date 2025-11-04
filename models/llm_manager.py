@@ -1,15 +1,22 @@
 import os
+import logging
 from typing import Optional, Dict, Any
 import requests
 import json
 import subprocess
 import time
+import httpx
+from config import ModelConfig
+
 try:
     # Ensure .env is loaded even if config wasn't imported yet
     from dotenv import load_dotenv  # type: ignore
     load_dotenv()
 except Exception:
     pass
+
+# Logger for the module
+log = logging.getLogger(__name__)
 
 
 class LocalLLMManager:
@@ -115,7 +122,8 @@ class LocalLLMManager:
             return False
 
     def _call_ollama(self, model: str, prompt: str, system: str = "",
-                     temperature: float = 0.7, max_tokens: int = 4000) -> Dict[str, Any]:
+                     temperature: float = 0.7, max_tokens: int = 4000,
+                     top_k: int = 40, top_p: float = 0.9) -> Dict[str, Any]:
         """Make API call to local Ollama instance"""
         payload = {
             "model": model,
@@ -123,7 +131,9 @@ class LocalLLMManager:
             "system": system,
             "options": {
                 "temperature": temperature,
-                "num_predict": max_tokens
+                "num_predict": max_tokens,
+                "top_k": top_k,
+                "top_p": top_p
             },
             "stream": False
         }
@@ -139,16 +149,10 @@ class LocalLLMManager:
             else:
                 raise Exception(f"Ollama API error: {response.status_code}")
         except Exception as e:
-            # Fallback to Perplexity if available
-            if self.perplexity_api_key:
-                try:
-                    content = self._call_perplexity(prompt=prompt, system=system, max_tokens=max_tokens)
-                    return {"response": content}
-                except Exception as pe:
-                    raise Exception(f"Failed to call local LLM and Perplexity fallback: {pe}")
-            raise Exception(f"Failed to call local LLM: {str(e)}")
+            raise e  # Let the invoke method handle fallback logic
 
-    def _call_perplexity(self, prompt: str, system: str = "", max_tokens: int = 800) -> str:
+
+    def _call_perplexity(self, prompt: str, system: str = "", max_tokens: int = 800) -> tuple[str, Dict]:
         """Minimal Perplexity chat completion used as fallback when Ollama is unavailable."""
         url = "https://api.perplexity.ai/chat/completions"
         headers = {
@@ -168,7 +172,17 @@ class LocalLLMManager:
         if resp.status_code != 200:
             raise Exception(f"Perplexity API error: {resp.status_code} {resp.text}")
         data = resp.json()
-        return data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+        
+        # Extract token usage if available
+        usage = data.get("usage", {})
+        token_usage = {
+            "prompt_tokens": usage.get("prompt_tokens", 0),
+            "completion_tokens": usage.get("completion_tokens", len(content.split())),
+            "total_tokens": usage.get("total_tokens", len(content.split()))
+        }
+        
+        return content, token_usage
 
     def get_writer(self, model: str = None):
         """Get writer LLM instance"""
@@ -201,13 +215,18 @@ class LocalLLMClient:
         self.model = model
         self.role = role
         self.manager = manager
-        self.temperature = 0.7 if role == "writer" else 0.3
-        self.max_tokens = 4000 if role == "writer" else 2000
+        # Load default parameters from config
+        self.temperature = float(os.getenv(f"{role.upper()}_TEMPERATURE", 
+                                          "0.7" if role == "writer" else "0.3"))
+        self.max_tokens = int(os.getenv(f"{role.upper()}_MAX_TOKENS", 
+                                       "4000" if role == "writer" else "2000"))
+        self.top_k = int(os.getenv(f"{role.upper()}_TOP_K", "40"))
+        self.top_p = float(os.getenv(f"{role.upper()}_TOP_P", "0.9"))
 
     def invoke(self, messages):
         """Invoke the local LLM with messages"""
         # Convert LangChain message format to prompt
-        if isinstance(messages, list):  # FIXED: message -> messages
+        if isinstance(messages, list):
             system_msg = ""
             human_msg = ""
             for msg in messages:
@@ -218,33 +237,86 @@ class LocalLLMClient:
             prompt = human_msg
             system = system_msg
         else:
-            prompt = str(messages)  # FIXED: message -> messages
+            prompt = str(messages)
             system = ""
 
-        response = self.manager._call_ollama(  # FIXED: _call_oliama -> _call_ollama
-            model=self.model,
-            prompt=prompt,
-            system=system,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens
-        )
+        try:
+            response = self.manager._call_ollama(
+                model=self.model,
+                prompt=prompt,
+                system=system,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                top_k=self.top_k,
+                top_p=self.top_p
+            )
+            
+            # Extract token counts from response
+            token_usage = self._extract_token_usage(response)
+            
+            # Create response object similar to LangChain
+            class Response:
+                def __init__(self, content, metadata):
+                    self.content = content
+                    self.response_metadata = metadata
 
-        # Create response object similar to LangChain
-        class Response:
-            def __init__(self, content, metadata):
-                self.content = content
-                self.response_metadata = metadata
-
-        metadata = {
-            "model": self.model,
-            "token_usage": {
-                "prompt_tokens": len(prompt.split()),
-                "completion_tokens": len(response.get("response", "").split()),
-                "total_tokens": len(prompt.split()) + len(response.get("response", "").split())
+            metadata = {
+                "model": self.model,
+                "token_usage": token_usage
             }
-        }
 
-        return Response(response.get("response", ""), metadata)
+            return Response(response.get("response", ""), metadata)
+            
+        except httpx.ConnectError as e:
+            log.error(f"Connection error when calling local LLM: {str(e)}")
+            raise Exception(f"Failed to connect to local LLM service: {str(e)}")
+        except httpx.TimeoutException as e:
+            log.error(f"Timeout when calling local LLM: {str(e)}")
+            raise Exception(f"Local LLM request timed out: {str(e)}")
+        except Exception as e:
+            log.error(f"Error when calling local LLM: {str(e)}")
+            # Fallback to Perplexity if available
+            if self.manager.perplexity_api_key:
+                try:
+                    content, token_usage = self.manager._call_perplexity(
+                        prompt=prompt, 
+                        system=system, 
+                        max_tokens=self.max_tokens
+                    )
+                    
+                    class Response:
+                        def __init__(self, content, metadata):
+                            self.content = content
+                            self.response_metadata = metadata
+                    
+                    metadata = {
+                        "model": "perplexity",
+                        "token_usage": token_usage
+                    }
+                    
+                    return Response(content, metadata)
+                except Exception as pe:
+                    raise Exception(f"Failed to call local LLM and Perplexity fallback: {pe}")
+            raise Exception(f"Failed to call local LLM: {str(e)}")
+
+    def _extract_token_usage(self, response: Dict) -> Dict:
+        """Extract token usage from Ollama response"""
+        # Try to get actual token counts from response metadata
+        ollama_stats = response.get("prompt_eval_count", 0) + response.get("eval_count", 0)
+        if ollama_stats > 0:
+            return {
+                "prompt_tokens": response.get("prompt_eval_count", 0),
+                "completion_tokens": response.get("eval_count", 0),
+                "total_tokens": ollama_stats
+            }
+        else:
+            # Fallback to word count estimation
+            response_text = response.get("response", "")
+            return {
+                "prompt_tokens": 0,  # Would need to pass prompt to calculate this
+                "completion_tokens": len(response_text.split()),
+                "total_tokens": len(response_text.split())
+            }
 
 
 # Global instance

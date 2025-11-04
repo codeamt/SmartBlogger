@@ -13,14 +13,22 @@ class EnhancedBlogState(BaseModel):
     target_audience: Optional[str] = "Developers"
     writing_style: Optional[List[str]] = Field(default_factory=list)
     custom_questions: Optional[List[str]] = Field(default_factory=list)
+    post_type: Optional[str] = None
+    content_constraints: Optional[Dict] = None
+    style_preferences: Optional[Dict] = None
+    success_criteria: Optional[str] = None
+    seo_targets: Optional[Dict] = None
+    seo_constraints: Optional[Dict] = None
 
     # Content pipeline
     documents: Optional[List[str]] = None
+    document_summaries: Optional[List[str]] = None
     content_summary: Optional[str] = None
     research_queries: Optional[List[str]] = None
     research_context: Optional[Dict] = None
     research_plan: Optional[Dict] = None
     research_sources: Optional[List[str]] = Field(default_factory=list)
+    research_status: Optional[str] = "pending"
 
     # Drafting
     sections: Optional[List[Dict]] = None

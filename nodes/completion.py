@@ -1,6 +1,7 @@
 from state import EnhancedBlogState
 from utils import memory_management
 from models.llm_manager import local_llm_manager
+from nodes.seo_optimization import analyze_keyword_density
 
 
 def completion_node(state: EnhancedBlogState) -> EnhancedBlogState:
@@ -15,6 +16,9 @@ def completion_node(state: EnhancedBlogState) -> EnhancedBlogState:
     total_sections = len(optimized_state.section_drafts)
     checked_sections = len(optimized_state.plagiarism_checks)
     total_tokens = sum(optimized_state.token_usage.values())
+    
+    # Perform final SEO analysis
+    seo_analysis = _perform_final_seo_analysis(optimized_state, final_content)
 
     completion_summary = {
         "total_sections": total_sections,
@@ -22,7 +26,8 @@ def completion_node(state: EnhancedBlogState) -> EnhancedBlogState:
         "total_tokens": total_tokens,
         "remaining_credits": optimized_state.free_tier_credits,
         "sections_with_revisions": len([h for h in optimized_state.revision_history.values() if h]),
-        "final_content": final_content
+        "final_content": final_content,
+        "seo_analysis": seo_analysis
     }
 
     # Add completion summary to research context
@@ -175,3 +180,104 @@ def _generate_conclusion(state: EnhancedBlogState) -> str:
     conclusion_parts.append("\nAs you apply these techniques in your projects, remember that practice and experimentation are key to mastery. Happy coding!")
     
     return "\n\n".join(conclusion_parts)
+
+
+def _perform_final_seo_analysis(state: EnhancedBlogState, final_content: str) -> dict:
+    """Perform final SEO analysis of the complete blog post"""
+    try:
+        # Get SEO targets from state
+        seo_targets = state.seo_targets or {}
+        primary_keywords = [kw.get("keyword", "") for kw in seo_targets.get("primary_keywords", [])]
+        secondary_keywords = [kw.get("keyword", "") for kw in seo_targets.get("secondary_keywords", [])]
+        
+        if not primary_keywords and not secondary_keywords:
+            return {"status": "no_seo_targets", "analysis": "No SEO targets defined"}
+        
+        # Analyze keyword density for the entire post
+        density_analysis = analyze_keyword_density(final_content, primary_keywords, secondary_keywords)
+        
+        # Check if density meets targets
+        primary_density = density_analysis.get("primary_density", 0)
+        secondary_density = density_analysis.get("secondary_density", 0)
+        
+        # Evaluate SEO performance
+        seo_evaluation = {
+            "primary_keywords": {
+                "target_density": "1.5-2.5%",
+                "actual_density": f"{primary_density}%",
+                "status": "good" if 1.5 <= primary_density <= 2.5 else "needs_improvement"
+            },
+            "secondary_keywords": {
+                "target_density": "0.5-1.0%",
+                "actual_density": f"{secondary_density}%",
+                "status": "good" if 0.5 <= secondary_density <= 1.0 else "needs_improvement"
+            },
+            "overall_seo_score": _calculate_overall_seo_score(density_analysis, primary_density, secondary_density),
+            "recommendations": _generate_seo_recommendations(primary_density, secondary_density)
+        }
+        
+        return {
+            "status": "completed",
+            "density_analysis": density_analysis,
+            "evaluation": seo_evaluation
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+            "analysis": "SEO analysis failed"
+        }
+
+def _calculate_overall_seo_score(density_analysis: dict, primary_density: float, secondary_density: float) -> str:
+    """Calculate overall SEO score based on keyword density"""
+    score = 0
+    
+    # Primary keyword scoring (40% of total)
+    if 1.5 <= primary_density <= 2.5:
+        score += 40
+    elif 1.0 <= primary_density <= 3.0:
+        score += 20
+    
+    # Secondary keyword scoring (30% of total)
+    if 0.5 <= secondary_density <= 1.0:
+        score += 30
+    elif 0.3 <= secondary_density <= 1.5:
+        score += 15
+    
+    # Content length scoring (30% of total)
+    total_words = density_analysis.get("total_words", 0)
+    if total_words >= 1500:
+        score += 30
+    elif total_words >= 1000:
+        score += 20
+    elif total_words >= 500:
+        score += 10
+    
+    if score >= 80:
+        return "excellent"
+    elif score >= 60:
+        return "good"
+    elif score >= 40:
+        return "fair"
+    else:
+        return "needs_improvement"
+
+def _generate_seo_recommendations(primary_density: float, secondary_density: float) -> list:
+    """Generate SEO recommendations based on density analysis"""
+    recommendations = []
+    
+    if primary_density < 1.5:
+        recommendations.append("Increase usage of primary keywords naturally throughout the content")
+    elif primary_density > 2.5:
+        recommendations.append("Reduce primary keyword usage to avoid keyword stuffing")
+    
+    if secondary_density < 0.5:
+        recommendations.append("Incorporate more secondary keywords in subheadings and body text")
+    elif secondary_density > 1.0:
+        recommendations.append("Reduce secondary keyword usage for better readability")
+    
+    if not recommendations:
+        recommendations.append("Keyword density is well-balanced. Maintain current approach in future posts.")
+    
+    return recommendations

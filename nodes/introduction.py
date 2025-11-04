@@ -157,25 +157,49 @@ def _synthesize_arxiv_context(state: EnhancedBlogState) -> EnhancedBlogState:
     if not arxiv_results:
         return state
     
-    # Extract key academic insights
+    # Extract key academic insights with enhanced metadata
     papers = []
-    for result in arxiv_results[:3]:
+    high_quality_papers = []
+    
+    for result in arxiv_results[:5]:  # Process more papers for better selection
         if isinstance(result, dict):
             title = result.get("title", "")
             authors = result.get("authors", [])
             summary = result.get("summary", "")
             
+            # Extract enhanced metadata if available
+            paper_type = result.get("type", "unknown")
+            quality_score = result.get("quality_score", 0)
+            metadata = result.get("metadata", {})
+            
+            paper_info = {
+                "title": title,
+                "authors": authors if isinstance(authors, list) else [authors],
+                "summary": summary[:300] if summary else "",
+                "type": paper_type,
+                "quality_score": quality_score,
+                "citation_count": metadata.get("citation_count", 0),
+                "year": metadata.get("year", 0),
+                "venue": metadata.get("venue", ""),
+                "topics": metadata.get("topics", [])
+            }
+            
             if title:
-                papers.append({
-                    "title": title,
-                    "authors": authors if isinstance(authors, list) else [authors],
-                    "summary": summary[:200] if summary else ""
-                })
+                papers.append(paper_info)
+                # Track high-quality papers separately
+                if quality_score >= 70:
+                    high_quality_papers.append(paper_info)
+    
+    # Sort papers by quality score
+    papers.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+    high_quality_papers.sort(key=lambda x: x.get("quality_score", 0), reverse=True)
     
     # Add academic context to research_context
     updated_research_context = research_context.copy()
-    updated_research_context["academic_papers"] = papers
+    updated_research_context["academic_papers"] = papers[:3]  # Top 3 papers
+    updated_research_context["high_quality_papers"] = high_quality_papers[:2]  # Top 2 high-quality papers
     updated_research_context["synthesis_type"] = "academic"
+    updated_research_context["paper_count"] = len(papers)
     
     return state.update(research_context=updated_research_context)
 
