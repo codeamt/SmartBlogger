@@ -34,240 +34,38 @@ def render_sidebar() -> dict:
 """
         st.markdown(f"<div style='text-align:center; margin-bottom: 1rem;'>{ICON_SVG}</div>", unsafe_allow_html=True)
 
-        with st.expander("Getting Started", expanded=False):
-            st.markdown(
-                "- Add your content — paste code or upload PDF/TXT/MD\n"
-                "- Choose research sources — ArXiv, Web, GitHub, Substack\n"
-                "- Define research focus — comma-separated topics\n"
-                "- Click Generate"
-            )
-        
-        
+        with st.expander("Post Idea Feed From Notion", expanded=False):
+            st.markdown("""
+            <div style='padding: 0.75rem; border-radius: var(--radius); background: var(--bg-subtle); margin-bottom: 0.5rem;'>
+                <h3 style='margin: 0 0 0.25rem 0;'>Configure Writing Direction</h3>
+                <p style='color: var(--text-secondary); font-size: 0.9rem; margin: 0;'> Paste code, upload files, and configure Arxiv, Web, GitHub, and Substack nodes.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("""
+            <div style='padding: 0.75rem; border-radius: var(--radius); background: var(--bg-subtle); margin-bottom: 0.5rem;'>
+                <h3 style='margin: 0 0 0.25rem 0;'>Set Preferences and Models</h3>
+                <p style='color: var(--text-secondary); font-size: 0.9rem; margin: 0;'> Adjust tone, audience, and writing style and select research/writer llms in sidebar.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("""
+            <div style='padding: 0.75rem; border-radius: var(--radius); background: var(--bg-subtle);'>
+                <h3 style='margin: 0 0 0.25rem 0;'>Generate Posts</h3>
+                <p style='color: var(--text-secondary); font-size: 0.9rem; margin: 0;'>Click Generate Blog Post to create posts with plagiarism detection and originality analysis.</p>
+            </div>
+            """, unsafe_allow_html=True)
+
         user_inputs = {}
-
-        # Model Studio (playground-style controls)
-        with st.expander("Model Settings", expanded=True):
-            # State probes
-            ollama_up = local_llm_manager.is_ollama_up()
-            current_writer = local_llm_manager.selected_writer_model or ModelConfig.LOCAL_WRITER_MODEL
-            current_researcher = local_llm_manager.selected_researcher_model or ModelConfig.LOCAL_RESEARCHER_MODEL
-            models_list = local_llm_manager.available_models or []
-            writer_available = current_writer in models_list
-            researcher_available = current_researcher in models_list
-            has_pplx = bool(getattr(local_llm_manager, "perplexity_api_key", None))
-
-            # Ollama Service with inline switch
-            with st.container():
-                col1, col2 = st.columns([3, 1])
-                with col1:
-                    status_label = "Running" if ollama_up else "Stopped"
-                    status_color = "var(--success)" if ollama_up else "var(--destructive)"  # Use theme variables
-                    st.markdown(
-                        f"<div style='display: flex; align-items: center; gap: 8px;'>"
-                        f"<div style='font-size: 1rem; color: var(--muted-foreground);'>Ollama Service:</div>"
-                        f"<div style='font-weight: 600; color: {status_color};'>{status_label}</div>"
-                        f"</div>", 
-                        unsafe_allow_html=True
-                    )
-                with col2:
-                    # Simple switch for Ollama service
-                    # Add custom styling to match theme
-                    st.markdown(
-                        "<style>"
-                        ".shadcn-ui-switch { background: var(--secondary) !important; border: 1px solid var(--border) !important; }"
-                        ".shadcn-ui-switch[data-state='checked'] { background: var(--primary) !important; }"
-                        ".shadcn-ui-switch-thumb { background: var(--primary-foreground) !important; }"
-                        ".shadcn-ui-switch[data-state='checked'] .shadcn-ui-switch-thumb { background: var(--primary-foreground) !important; }"
-                        "</style>", 
-                        unsafe_allow_html=True
-                    )
-                    switch_value = ui.switch(default_checked=ollama_up, label="", key="ollama_switch")
-                    # Handle switch toggle
-                    if switch_value != ollama_up:
-                        if switch_value:  # Turn on
-                            with st.spinner("Starting Ollama..."):
-                                success = local_llm_manager.start_ollama()
-                            if success:
-                                st.success("Ollama started")
-                            else:
-                                st.error("Failed to start")
-                        else:  # Turn off
-                            with st.spinner("Stopping Ollama..."):
-                                success = local_llm_manager.stop_ollama()
-                            if success:
-                                st.success("Ollama stopped")
-                            else:
-                                st.error("Failed to stop")
-                        st.rerun()
-
-            # Model Selection with improved layout
-            
-            
-            # Writer model selection
-            writer_col1, writer_col2 = st.columns([0.40, 0.60])
-            # Model status summary under Ollama Service
-            writer_status = "Available" if writer_available else "Not Installed"
-            researcher_status = "Available" if researcher_available else "Not Installed"
-            
-            writer_status_color = "var(--success)" if writer_available else "var(--destructive)"
-            researcher_status_color = "var(--success)" if researcher_available else "var(--destructive)"
-            with writer_col1:
-                st.markdown("**Writer:**")
-                st.markdown("<div style='font-weight: 600; color: {writer_status_color}; font-size: 0.8rem; margin-top: 0.2rem;'>{writer_status}</div>", unsafe_allow_html=True)
-            with writer_col2:
-                writer_options = models_list if models_list else [current_writer]
-                writer_index = writer_options.index(current_writer) if current_writer in writer_options else 0
-                sb_writer = st.selectbox(
-                    "Select writer model",
-                    options=writer_options,
-                    index=writer_index,
-                    key="sb_writer_select",
-                    label_visibility="collapsed"
-                )
-            
-            # Researcher model selection
-            researcher_col1, researcher_col2 = st.columns([0.40, 0.60])
-            with researcher_col1:
-                st.markdown("**Researcher:**")
-                st.markdown("<div style='font-weight: 600; color: {researcher_status_color}; font-size: 0.8rem; margin-top: 0.2rem;'>{researcher_status}</div>", unsafe_allow_html=True)
-            with researcher_col2:
-                researcher_options = models_list if models_list else [current_researcher]
-                researcher_index = researcher_options.index(current_researcher) if current_researcher in researcher_options else 0
-                sb_researcher = st.selectbox(
-                    "Select researcher model",
-                    options=researcher_options,
-                    index=researcher_index,
-                    key="sb_researcher_select",
-                    label_visibility="collapsed"
-                )
-            
-            # Apply button with better styling
-            if sb_writer != current_writer or sb_researcher != current_researcher:
-                if st.button("Apply Selected Models", key="sb_apply_models", type="primary", use_container_width=True):
-                    local_llm_manager.set_default_models(writer=sb_writer, researcher=sb_researcher)
-                    st.success("Models updated successfully")
-                    st.rerun()
-
-            # Temperature Controls (playground controls style)
-            with st.expander("Temperature Controls", expanded=False):
-                st.markdown("### Model Temperature Settings")
-                writer_temp = st.slider("Writer Temperature", min_value=0.0, max_value=1.0, value=0.7, step=0.1, key="writer_temp")
-                researcher_temp = st.slider("Researcher Temperature", min_value=0.0, max_value=1.0, value=0.5, step=0.1, key="researcher_temp")
-            
-            # Model Management (playground controls style)
-            with st.expander("Model Management", expanded=False):
-                st.markdown("### Install/Remove Models")
-                
-                # Popular models suitable for Mac M2 Ultra 64GB
-                popular_models = [
-                    "llama3.1:8b",
-                    "llama3.1:70b",
-                    "llama3:8b",
-                    "llama3:70b",
-                    "mistral:7b",
-                    "mixtral:8x7b",
-                    "mixtral:8x22b",
-                    "codellama:7b",
-                    "codellama:34b",
-                    "codellama:70b",
-                    "phi3:3.8b",
-                    "phi3:14b",
-                    "gemma2:9b",
-                    "gemma2:27b",
-                    "qwen2:7b",
-                    "qwen2:72b",
-                    "dolphin-llama3:8b",
-                    "dolphin-mistral:7b",
-                    "deepseek-coder:6.7b",
-                    "deepseek-coder:33b",
-                    "command-r:35b",
-                    "command-r-plus:104b"
-                ]
-                
-                # Combine with already installed models to avoid duplicates
-                all_models = list(set(popular_models + models_list))
-                all_models.sort()
-                
-                # Dropdown for model selection with custom input option
-                st.markdown("**Select from popular models or enter custom model:**")
-                model_selection_type = st.radio("Model Selection", ["Popular Models", "Custom Model"], horizontal=True, key="model_selection_type", label_visibility="collapsed")
-                
-                # Add some spacing after the radio buttons
-                st.markdown("<div style='margin: 0.5rem 0;'></div>", unsafe_allow_html=True)
-                
-                if model_selection_type == "Popular Models":
-                    # Use shadcn UI select component
-                    # Note: The select component has limited parameter support
-                    # It will automatically scroll when there are many options
-                    target_model = ui.select(
-                        options=all_models,
-                        key="model_dropdown_select"
-                    )
-                else:
-                    target_model = st.text_input(
-                        "Custom model identifier", 
-                        value="", 
-                        placeholder="e.g., llama3.1:8b, mistral:7b", 
-                        key="model_custom_input",
-                        label_visibility="collapsed"
-                    )
-                
-                mg1, mg2 = st.columns(2)
-                with mg1:
-                    if st.button("Pull Model", key="sb_pull_model", use_container_width=True, type="secondary"):
-                        if not target_model:
-                            st.warning("Please select or enter a model identifier")
-                        elif not local_llm_manager.is_ollama_up():
-                            st.error("Ollama service is not running")
-                        else:
-                            with st.spinner(f"Pulling {target_model}... This may take several minutes."):
-                                ok = local_llm_manager.pull_model(target_model)
-                            if ok:
-                                st.success(f"Model {target_model} installed successfully")
-                                local_llm_manager.available_models = local_llm_manager._get_available_models()
-                                st.rerun()
-                            else:
-                                st.error(f"Failed to pull model {target_model}")
-                with mg2:
-                    if st.button("Remove Model", key="sb_remove_model", use_container_width=True, type="secondary"):
-                        if not target_model:
-                            st.warning("Please select or enter a model identifier")
-                        elif not local_llm_manager.is_ollama_up():
-                            st.error("Ollama service is not running")
-                        else:
-                            with st.spinner(f"Removing {target_model}..."):
-                                ok = local_llm_manager.delete_model(target_model)
-                            if ok:
-                                st.success(f"Model {target_model} removed successfully")
-                                local_llm_manager.available_models = local_llm_manager._get_available_models()
-                                st.rerun()
-                            else:
-                                st.error(f"Failed to remove model {target_model}")
-                
-                # Refresh models button
-                if st.button("🔄 Refresh Model List", key="sb_refresh_models", use_container_width=True):
-                    with st.spinner("Refreshing models..."):
-                        local_llm_manager.available_models = local_llm_manager._get_available_models()
-                    st.success("Model list refreshed")
-                    st.rerun()
-
-                # Display available models
-                if models_list:
-                    st.markdown("**Installed Models**")
-                    # Create a scrollable container for the model list
-                    with st.container():
-                        st.markdown(
-                            "<div style='max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 6px; padding: 0.5rem;'>", 
-                            unsafe_allow_html=True
-                        )
-                        for model in models_list:
-                            st.markdown(f"<div style='padding: 0.25rem 0.5rem; background: var(--bg-card); border-radius: 6px; margin: 0.25rem 0; font-family: monospace;'>{model}</div>", unsafe_allow_html=True)
-                        st.markdown("</div>", unsafe_allow_html=True)
 
         # Research controls moved to main; read from session state
         user_inputs["research_sources"] = st.session_state.get("research_sources", ["Arxiv", "Web"])
         user_inputs["research_focus"] = st.session_state.get("research_focus", "")
         user_inputs["research_queries"] = [q.strip() for q in user_inputs["research_focus"].split(",") if q.strip()]
+        user_inputs["github_urls"] = st.session_state.get("github_urls", [])
+        user_inputs["substack_post_url"] = st.session_state.get("substack_post_url", "")
+        user_inputs["substack_publications"] = st.session_state.get("substack_publications", [])
+        user_inputs["web_sites"] = st.session_state.get("web_sites", [])
+        user_inputs["web_urls"] = st.session_state.get("web_urls", [])
+        user_inputs["arxiv_query"] = st.session_state.get("arxiv_query", "")
 
         # Bridge main panel state into user_inputs for backend
         user_inputs["code_input"] = st.session_state.get("code_input", "")

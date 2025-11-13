@@ -2,7 +2,7 @@ import streamlit as st
 import streamlit_shadcn_ui as ui
 from typing import List, Tuple
 
-# Colors now drive from CSS variables defined in theme (improved dark mode)
+# Colors now drive from CSS variables defined in theme (shadcn UI)
 ACCENT = "var(--accent)"
 ACCENT_LIGHT = "var(--muted-foreground)"
 BORDER = "var(--border)"
@@ -43,22 +43,13 @@ def section_header(title: str, icon: str = "", key: str = "section_header", nest
 
 
 def card(content: str, title: str = None, padding: str = "1.5rem", border_radius: str = "12px"):
-    """Render a card component with optional title"""
-    title_html = f"<h4 style='margin: 0 0 1rem 0; color: {TEXT}; font-weight: 600;'>{title}</h4>" if title else ""
-    
-    st.markdown(f"""
-    <div style='
-        background: {BG_CARD}; 
-        border: 1px solid {BORDER}; 
-        border-radius: var(--radius); 
-        padding: {padding}; 
-        margin: 1rem 0;
-        box-shadow: var(--shadow-sm);
-    '>
-        {title_html}
-        <div style='color: {TEXT}; line-height: 1.6;'>{content}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    """Render a card component with optional title using shadcn UI pattern"""
+    import uuid
+    card_key = f"card_{title}_{str(uuid.uuid4())[:8]}" if title else f"card_{str(uuid.uuid4())[:8]}"
+    with ui.card(key=card_key):
+        if title:
+            st.subheader(title)
+        st.markdown(content, unsafe_allow_html=True)
 
 
 def badges(items: List[Tuple[str, str]] | None = None, key: str = "badges", gap: int = 8):
@@ -74,9 +65,11 @@ def pill_row(labels: List[str], key: str = "pill_row"):
 
 
 def panel(title: str | None = None, subtle_title: str | None = None):
-    """Render a panel component with optional title"""
-    c = st.container(border=True)
-    with c:
+    """Render a panel component with optional title using shadcn UI card pattern"""
+    # Use shadcn UI card for better styling
+    import uuid
+    container_key = f"panel_{title}_{str(uuid.uuid4())[:8]}" if title else f"panel_{str(uuid.uuid4())[:8]}"
+    with ui.card(key=container_key):
         if title or subtle_title:
             title_html = title or ""
             subtle_html = f"<div style='font-size: 0.85rem; color: {TEXT_SECONDARY};'>{subtle_title}</div>" if subtle_title else ""
@@ -89,26 +82,18 @@ def panel(title: str | None = None, subtle_title: str | None = None):
                 """,
                 unsafe_allow_html=True,
             )
-    return c
+        # Return a container for content to be added
+        return st.container()
 
 
 def card_panel(content: str, title: str = None, padding: str = "1.5rem"):
-    """Render a card-style panel component with optional title"""
-    title_html = f"<h3 style='margin: 0 0 1rem 0; color: {TEXT}; font-weight: 600; font-size: 1.25rem;'>{title}</h3>" if title else ""
-    
-    st.markdown(f"""
-    <div style='
-        background: {BG_CARD}; 
-        border: 1px solid {BORDER}; 
-        border-radius: var(--radius); 
-        padding: {padding}; 
-        margin: 1.5rem 0;
-        box-shadow: var(--shadow-md);
-    '>
-        {title_html}
-        <div style='color: {TEXT}; line-height: 1.6;'>{content}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    """Render a card-style panel component with optional title using shadcn UI pattern"""
+    import uuid
+    card_key = f"card_panel_{title}_{str(uuid.uuid4())[:8]}" if title else f"card_panel_{str(uuid.uuid4())[:8]}"
+    with ui.card(key=card_key):
+        if title:
+            st.subheader(title)
+        st.markdown(content, unsafe_allow_html=True)
 
 
 def status_pills(items: List[Tuple[str, bool, str]] , key: str = "status_pills"):

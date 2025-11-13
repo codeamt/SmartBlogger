@@ -100,6 +100,12 @@ SmartBlogger/
 ├── nodes/             # Workflow nodes
 ├── services/          # External service integrations
 ├── ui/                # User interface components
+│   ├── theme.py       # Custom theme and styling
+│   ├── sidebar.py     # Sidebar components
+│   ├── dashboard.py   # Main dashboard components
+│   ├── loading_screen.py # Loading screen components
+│   ├── footer.py      # Footer components
+│   └── components.py  # Reusable UI components
 ├── utils/             # Utility functions
 └── workflows/         # Workflow definitions
 ```

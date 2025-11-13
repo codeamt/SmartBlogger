@@ -10,6 +10,8 @@ SmartBlogger is an AI-powered blogging assistant that helps you create high-qual
 - **Local LLM Support**: Works with Ollama for fully local AI processing
 - **Image Processing**: Extract text from images using DeepSeek-OCR with vLLM acceleration and perform general image understanding
 - **Customizable Writing Style**: Adjust tone, audience, and content preferences
+- **Modern UI/UX**: Professional interface with shadcn UI components and enhanced visual design
+- **Real-time Feedback**: Progress indicators and status updates during content generation
 
 ## Getting Started
 
