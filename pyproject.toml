@@ -30,10 +30,27 @@ dependencies = [
     "markdown>=3.9",
     "markdownify>=1.2.0",
     "streamlit-shadcn-ui>=0.1.19",
+    "vllm>=0.4.0",
+    "einops",
+    "addict",
+    "easydict",
+    # "flash-attn>=2.5.0", Using >= to allow compatible versions
+    "Pillow",
+    "mlx>=0.10.0",
+    "mlx-lm>=0.10.0",
 ]
 
 [project.optional-dependencies]
-dev = []
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0",
+]
+
+apple-silicon = [
+    "mlx>=0.10.0",
+    "mlx-lm>=0.10.0",
+]
 
 docs = [
     "mkdocs>=1.5",
@@ -45,6 +62,9 @@ editor = [
     "markdown>=3.4.0",
     "markdownify>=0.11.0",
 ]
+
+[tool.uv]
+extra-build-dependencies = {"flash-attn" = ["torch"]}
 
 [project.scripts]
 streamlit = "app:main"

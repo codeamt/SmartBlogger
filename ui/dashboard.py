@@ -113,7 +113,7 @@ def render_welcome_screen():
         )
         # Uploads
         uploaded_files_main = st.file_uploader(
-            "Upload files",
+            "Upload files (PDF, TXT, MD, PNG, JPEG - images will be processed with OCR)",
             accept_multiple_files=True,
             type=["pdf", "txt", "md", "png", "jpeg"],
             label_visibility="collapsed",

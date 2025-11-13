@@ -1,10 +1,11 @@
 from state import EnhancedBlogState
-from utils.file_processing import extract_text_from_pdf
+from utils.file_processing import extract_text_from_pdf, extract_text_from_image, is_image_file
 from models.llm_manager import local_llm_manager
 from models.summarizer import summarizer
 from typing import Dict, Any
 import json
 import re
+import os
 
 
 def input_processing_node(state: EnhancedBlogState) -> EnhancedBlogState:
@@ -15,8 +16,17 @@ def input_processing_node(state: EnhancedBlogState) -> EnhancedBlogState:
     # Process uploaded files with enhanced summarization
     if state.uploaded_files:
         for file_path in state.uploaded_files:
+            file_extension = os.path.splitext(file_path)[1].lower()
+            
             if file_path.endswith(".pdf"):
                 content = extract_text_from_pdf(file_path)
+                processed_docs.append(content)
+                # Generate structured summary
+                summary = generate_structured_summary(content, file_path)
+                enriched_summaries.append(summary)
+            elif is_image_file(file_path):
+                # Process image files with OCR
+                content = extract_text_from_image(file_path)
                 processed_docs.append(content)
                 # Generate structured summary
                 summary = generate_structured_summary(content, file_path)
