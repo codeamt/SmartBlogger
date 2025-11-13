@@ -105,6 +105,8 @@ def optimize_research_queries(state: EnhancedBlogState, total_tokens: int) -> li
 def generate_research_plan(queries: list, state: EnhancedBlogState) -> dict:
     """Create optimized research execution plan"""
     research_sources = state.research_sources or ["arxiv", "web"]
+    research_sources = [s.lower() for s in research_sources]
+    input_type = _determine_input_type(state)
 
     plan = {
         "high_priority": [],
